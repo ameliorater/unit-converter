@@ -1,0 +1,5 @@
+1 Kilometer (km) = 1000 Meters (m)
+1 Meter (m) = 100 Centimeters (cm)
+1 Centimeter (cm) = 10 Millimeters (mm)
+1 Meter (m) = 3.28 Feet (ft)
+1 Minute (min) = 60 Seconds (s)
