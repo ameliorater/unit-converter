@@ -1,5 +1,8 @@
 1 Kilometer (km) = 1000 Meters (m)
 1 Meter (m) = 100 Centimeters (cm)
 1 Centimeter (cm) = 10 Millimeters (mm)
-1 Meter (m) = 3.28 Feet (ft)
+1 Meter = 3.28 Feet (ft)
+1 Foot (ft) = 12 Inch (in)
+1 Smoot = 1.7018 Meters
 1 Minute (min) = 60 Seconds (s)
+1 Second (s) = 1000 Milliseconds (ms)

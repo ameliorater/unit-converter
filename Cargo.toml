@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 petgraph = "0.5.0"
+petgraph-evcxr = "0.1.1"
+rand = "0.4.0"
