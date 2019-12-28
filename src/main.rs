@@ -6,7 +6,6 @@ use petgraph::algo::{has_path_connecting, astar};
 use petgraph::{graph};
 use std::cmp::min;
 use petgraph::dot::{Config, Dot};
-
 #[allow(mutable_borrow_reservation_conflict)]
 
 #[derive(Eq, Hash, PartialEq, Clone, Debug)]
@@ -27,17 +26,18 @@ fn main() {
     let graph = create_graph(input_table);
 
     //debugging print statements
-    println!("Graph node count: {}", graph.node_count());
-    println!("{:?}", Dot::with_config(&graph, &[Config::EdgeIndexLabel]));
-    for i in 0..graph.edge_count() {
-        println!("Edge {} weight: {:?}", i, graph.edge_weight(EdgeIndex::new(i)));
-    }
-    //draw_graph(&graph);
+//    println!("Graph node count: {}", graph.node_count());
+//    println!("{:?}", Dot::with_config(&graph, &[Config::EdgeIndexLabel]));
+//    for i in 0..graph.edge_count() {
+//        println!("Edge {} weight: {:?}", i, graph.edge_weight(EdgeIndex::new(i)));
+//    }
+//    //draw_graph(&graph);
 
+    let mut prompt_string = String::from("Please enter a unit conversion: \n(example: 2.4 meters in mm)");
 
     loop {
         let mut input = String::new();
-        println!("Please enter a unit conversion: \n(example: 2.4 meters in mm)");
+        println!("{}", prompt_string);
         io::stdin().read_line(&mut input).expect("Not a string");
         let mut input: String = String::from(input.trim()); //trim whitespace
 
@@ -61,6 +61,7 @@ fn main() {
         let mut indices: Vec<NodeIndex> = Vec::new(); //will contain from_index, from_index_2, to_index, to_index_2
         for name in &names {
             if let Some(index) = get_node_from_name(&graph, &name, 3) {
+                //println!("index: {:?}", index);
                 indices.push(index);
             } else {
                 println!("{} is not a valid unit\n", name);
@@ -68,28 +69,31 @@ fn main() {
             }
         }
 
-        if let Some(conversion_factor_1) = get_conversion_factor(&graph, *indices.get(0).unwrap(), *indices.get(2).unwrap()) {
-            let mut answer = input_val / conversion_factor_1;
-            if !complex_conversion {
-                if answer > 0.01 {
-                    answer = (answer * 1000_f64).round() / 1000_f64; //round to three decimal places
-                    println!("{:.3} {}\n", answer, names.get(2).unwrap());
-                }
-                println!("{} {}\n", answer, names.get(2).unwrap());
-            } else {
-                if let Some(conversion_factor_2) = get_conversion_factor(&graph, *indices.get(1).unwrap(),*indices.get(3).unwrap()) {
-                    let mut answer = input_val / conversion_factor_1 / conversion_factor_2;
-                    if answer > 0.01 {
-                        answer = (answer * 1000_f64).round() / 1000_f64; //round to three decimal places
-                    }
-                    println!("{} {}/{}\n", answer, names.get(2).unwrap(), names.get(3).unwrap()); //round to three decimal places
-                } else {
-                    println!("Not a valid conversion");
-                }
-            }
-        } else {
-            println!("Not a valid conversion");
+        let mut unit_pairs: Vec<(usize, usize)> = vec![(0, 1)];
+        if complex_conversion {
+            unit_pairs = vec![(0, 2), (1, 3)]
         }
+
+        let mut conversion_factors: Vec<f64> = Vec::new();
+        for pair in unit_pairs {
+            let from_index = *indices.get(pair.0).unwrap();
+            let to_index = *indices.get(pair.1).unwrap();
+            if let Some(conversion_factor) = get_conversion_factor(&graph, from_index, to_index) {
+                //println!("conversion factor {}", conversion_factor);
+                conversion_factors.push(conversion_factor);
+            } else {
+                println!("Not a valid conversion");
+                continue
+            }
+        }
+
+        let mut answer = input_val / *conversion_factors.get(0).unwrap();
+        if complex_conversion {
+            answer = answer * *conversion_factors.get(1).unwrap();
+        }
+        print_answer(answer, &names, complex_conversion);
+
+        prompt_string = prompt_string.replace("\n(example: 2.4 meters in mm)", "");
     }
 }
 
@@ -108,7 +112,7 @@ fn get_conversion_factor (graph: &DiGraph<Unit, f64>, from_index: NodeIndex, to_
         for current_node in path {
             if let Some(previous_node) = previous_node {
                 let edge_index = graph.find_edge(previous_node, current_node).unwrap();
-                conversion_factor /= *graph.edge_weight(edge_index).unwrap();
+                conversion_factor *= *graph.edge_weight(edge_index).unwrap();
                 //println!("Previous node: {:?}  Current node: {:?} Dividing by: {}", previous_node, current_node, *graph.edge_weight(edge_index).unwrap());
             }
             if current_node == to_index {
@@ -227,6 +231,7 @@ fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_di
 
 //uses Levenshtein distance to calculate the minimum number of insertions, deletions,
 //  or substitutions needed to convert one string into another
+//currently recursive, can be implemented using dp and would be much faster for large strings
 fn get_edit_distance (mut string1: String, mut string2: String) -> u32 {
     if string1.len() == 0 {
         return string2.len() as u32;
@@ -262,6 +267,19 @@ fn get_edit_distance (mut string1: String, mut string2: String) -> u32 {
     return 1 + min(substitution, min(insertion, deletion));
 }
 
+fn print_answer (mut answer: f64, names: &Vec<String>, complex_conversion: bool) {
+    if complex_conversion {
+        if answer > 0.00001 {
+            answer = (answer * 100000_f64).round() / 100000_f64; //round to three decimal places
+        }
+        println!("{} {}/{}\n", answer, names.get(2).unwrap(), names.get(3).unwrap()); //round to three decimal places
+    } else {
+        if answer > 0.00001 {
+            answer = (answer * 100000_f64).round() / 100000_f64; //round to three decimal places
+        }
+        println!("{} {}\n", answer, names.get(1).unwrap());
+    }
+}
 
 //to allow use of astar algorithm
 fn empty_heuristic<N>(_nid: N) -> u32 { 0 }
