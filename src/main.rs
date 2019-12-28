@@ -51,54 +51,40 @@ fn main() {
 
         let mut elements = input.split_whitespace();
         let input_val: f64 = elements.next().unwrap().parse().unwrap();
-        let from_name = elements.next().unwrap().to_lowercase();
-        let mut from_name_2: String = String::new();
-        if complex_conversion { from_name_2 = elements.next().unwrap().to_lowercase(); }
+        let mut names: Vec<String> = Vec::new(); //will contain from_name, from_name_2, to_name, to_name_2
+        names.push(elements.next().unwrap().to_lowercase());
+        if complex_conversion { names.push(elements.next().unwrap().to_lowercase()); }
         elements.next(); //clear intermediary word (in, to, etc.)
-        let to_name = elements.next().unwrap().to_lowercase();
-        let mut to_name_2: String = String::new();
-        if complex_conversion { to_name_2 = elements.next().unwrap().to_lowercase(); }
+        names.push(elements.next().unwrap().to_lowercase());
+        if complex_conversion { names.push(elements.next().unwrap().to_lowercase()); }
 
-        let from_index: NodeIndex;
-        let to_index: NodeIndex;
-        let mut from_index_2: NodeIndex = Default::default();
-        let mut to_index_2: NodeIndex = Default::default();
-        if let Some(from_index_op) = get_node_from_name(&graph, &from_name, 3) {
-            from_index = from_index_op;
-            if let Some(to_index_op) = get_node_from_name(&graph, &to_name, 3) {
-                to_index = to_index_op;
-                if complex_conversion {
-                    if let Some(from_index_2_op) = get_node_from_name(&graph, &from_name_2, 3) {
-                        from_index_2 = from_index_2_op;
-                        if let Some(to_index_2_op) = get_node_from_name(&graph, &to_name_2, 3) {
-                            to_index_2 = to_index_2_op;
-                        } else {
-                            println!("{} is not a valid unit\n", to_name_2);
-                            continue
-                        }
-                    } else {
-                        println!("{} is not a valid unit\n", from_name_2);
-                        continue
-                    }
-                }
+        let mut indices: Vec<NodeIndex> = Vec::new(); //will contain from_index, from_index_2, to_index, to_index_2
+        for name in &names {
+            if let Some(index) = get_node_from_name(&graph, &name, 3) {
+                indices.push(index);
             } else {
-                println!("{} is not a valid unit\n", to_name);
+                println!("{} is not a valid unit\n", name);
                 continue
             }
-        } else {
-            println!("{} is not a valid unit\n", from_name);
-            continue
         }
 
-
-        if let Some(conversion_factor_1) = get_conversion_factor(&graph, from_index, to_index) {
-            let answer = input_val / conversion_factor_1;
+        if let Some(conversion_factor_1) = get_conversion_factor(&graph, *indices.get(0).unwrap(), *indices.get(2).unwrap()) {
+            let mut answer = input_val / conversion_factor_1;
             if !complex_conversion {
-                println!("{:.3} {}\n", answer, to_name);
+                if answer > 0.01 {
+                    answer = (answer * 1000_f64).round() / 1000_f64; //round to three decimal places
+                    println!("{:.3} {}\n", answer, names.get(2).unwrap());
+                }
+                println!("{} {}\n", answer, names.get(2).unwrap());
             } else {
-                if let Some(conversion_factor_2) = get_conversion_factor(&graph, from_index_2, to_index_2) {
-                    let answer = input_val / conversion_factor_1 / conversion_factor_2;
-                    println!("{:.3} {}/{}\n", answer, to_name, to_name_2);
+                if let Some(conversion_factor_2) = get_conversion_factor(&graph, *indices.get(1).unwrap(),*indices.get(3).unwrap()) {
+                    let mut answer = input_val / conversion_factor_1 / conversion_factor_2;
+                    if answer > 0.01 {
+                        answer = (answer * 1000_f64).round() / 1000_f64; //round to three decimal places
+                    }
+                    println!("{} {}/{}\n", answer, names.get(2).unwrap(), names.get(3).unwrap()); //round to three decimal places
+                } else {
+                    println!("Not a valid conversion");
                 }
             }
         } else {
