@@ -6,3 +6,5 @@
 1 Smoot = 1.7018 Meters
 1 Minute (min) = 60 Seconds (s)
 1 Second (s) = 1000 Milliseconds (ms)
+1 Hour (hr) = 60 Minutes (min)
+1 Mile (mi) = 1.609 Kilometer

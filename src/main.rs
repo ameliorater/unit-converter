@@ -1,10 +1,12 @@
-use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::graph::{DiGraph, NodeIndex, EdgeIndex};
 use std::{fs, io};
 use rand::Rng;
 use petgraph::visit::{IntoNodeReferences};
 use petgraph::algo::{has_path_connecting, astar};
 use petgraph::{graph};
 use std::cmp::min;
+use petgraph::dot::{Config, Dot};
+
 #[allow(mutable_borrow_reservation_conflict)]
 
 #[derive(Eq, Hash, PartialEq, Clone, Debug)]
@@ -25,69 +27,113 @@ fn main() {
     let graph = create_graph(input_table);
 
     //debugging print statements
-//    println!("Graph node count: {}", graph.node_count());
-//    println!("{:?}", Dot::with_config(&graph, &[Config::EdgeIndexLabel]));
-//    for i in 0..graph.edge_count() {
-//        println!("Edge {} weight: {:?}", i, graph.edge_weight(EdgeIndex::new(i)));
-//    }
-//    //draw_graph(&graph);
+    println!("Graph node count: {}", graph.node_count());
+    println!("{:?}", Dot::with_config(&graph, &[Config::EdgeIndexLabel]));
+    for i in 0..graph.edge_count() {
+        println!("Edge {} weight: {:?}", i, graph.edge_weight(EdgeIndex::new(i)));
+    }
+    //draw_graph(&graph);
 
 
     loop {
         let mut input = String::new();
         println!("Please enter a unit conversion: \n(example: 2.4 meters in mm)");
         io::stdin().read_line(&mut input).expect("Not a string");
-        let input = input.trim(); //trim whitespace
+        let mut input: String = String::from(input.trim()); //trim whitespace
+
+        //complex unit conversion
+        let mut complex_conversion: bool = false;
+        if input.contains("/") || input.contains("per") {
+            input = input.replace("/", " ");
+            input = input.replace("per", " ");
+            complex_conversion = true;
+        }
+
         let mut elements = input.split_whitespace();
         let input_val: f64 = elements.next().unwrap().parse().unwrap();
-        let first_name = elements.next().unwrap().to_lowercase();
+        let from_name = elements.next().unwrap().to_lowercase();
+        let mut from_name_2: String = String::new();
+        if complex_conversion { from_name_2 = elements.next().unwrap().to_lowercase(); }
         elements.next(); //clear intermediary word (in, to, etc.)
-        let second_name = elements.next().unwrap().to_lowercase();
+        let to_name = elements.next().unwrap().to_lowercase();
+        let mut to_name_2: String = String::new();
+        if complex_conversion { to_name_2 = elements.next().unwrap().to_lowercase(); }
 
         let from_index: NodeIndex;
         let to_index: NodeIndex;
-        if let Some(from_index_op) = get_node_from_name(&graph, &first_name, 3) {
+        let mut from_index_2: NodeIndex = Default::default();
+        let mut to_index_2: NodeIndex = Default::default();
+        if let Some(from_index_op) = get_node_from_name(&graph, &from_name, 3) {
             from_index = from_index_op;
-            if let Some(to_index_op) = get_node_from_name(&graph, &second_name, 3) {
+            if let Some(to_index_op) = get_node_from_name(&graph, &to_name, 3) {
                 to_index = to_index_op;
+                if complex_conversion {
+                    if let Some(from_index_2_op) = get_node_from_name(&graph, &from_name_2, 3) {
+                        from_index_2 = from_index_2_op;
+                        if let Some(to_index_2_op) = get_node_from_name(&graph, &to_name_2, 3) {
+                            to_index_2 = to_index_2_op;
+                        } else {
+                            println!("{} is not a valid unit\n", to_name_2);
+                            continue
+                        }
+                    } else {
+                        println!("{} is not a valid unit\n", from_name_2);
+                        continue
+                    }
+                }
             } else {
-                println!("{} is not a valid unit\n", second_name);
+                println!("{} is not a valid unit\n", to_name);
                 continue
             }
         } else {
-            println!("{} is not a valid unit\n", first_name);
+            println!("{} is not a valid unit\n", from_name);
             continue
         }
 
-        if has_path_connecting(&graph, from_index, to_index, None) {
-            //check to see if the conversion is in the table
-            if graph.contains_edge(from_index, to_index) {
-                let edge_index = graph.find_edge(from_index, to_index).unwrap();
-                let answer = input_val / *graph.edge_weight(edge_index).unwrap();
-                println!("{:.3} {}\n", answer, second_name);
-                continue;
-            }
 
-            let path:  Vec<NodeIndex> = astar(&graph, from_index, |n| n == to_index, empty_cost, empty_heuristic).unwrap().1;
-            let mut conversion_factor = 1.0;
-            let mut previous_node = None;
-            for current_node in path {
-                if let Some(previous_node) = previous_node {
-                    let edge_index = graph.find_edge(previous_node, current_node).unwrap();
-                    conversion_factor /= *graph.edge_weight(edge_index).unwrap();
-                    //println!("Previous node: {:?}  Current node: {:?} Dividing by: {}", previous_node, current_node, *graph.edge_weight(edge_index).unwrap());
+        if let Some(conversion_factor_1) = get_conversion_factor(&graph, from_index, to_index) {
+            let answer = input_val / conversion_factor_1;
+            if !complex_conversion {
+                println!("{:.3} {}\n", answer, to_name);
+            } else {
+                if let Some(conversion_factor_2) = get_conversion_factor(&graph, from_index_2, to_index_2) {
+                    let answer = input_val / conversion_factor_1 / conversion_factor_2;
+                    println!("{:.3} {}/{}\n", answer, to_name, to_name_2);
                 }
-                if current_node == to_index {
-                    //target node reached
-                    break
-                }
-                previous_node = Some(current_node);
             }
-            let answer = input_val * conversion_factor;
-            println!("{:.3} {}\n", answer, second_name); //print answer to max 3 decimal places
         } else {
             println!("Not a valid conversion");
         }
+    }
+}
+
+fn get_conversion_factor (graph: &DiGraph<Unit, f64>, from_index: NodeIndex, to_index: NodeIndex) -> Option<f64> {
+    if has_path_connecting(&graph, from_index, to_index, None) {
+        //check to see if the conversion is in the table
+        if graph.contains_edge(from_index, to_index) {
+            let edge_index = graph.find_edge(from_index, to_index).unwrap();
+            let conversion_factor = *graph.edge_weight(edge_index).unwrap();
+            return Some(conversion_factor)
+        }
+
+        let path:  Vec<NodeIndex> = astar(&graph, from_index, |n| n == to_index, empty_cost, empty_heuristic).unwrap().1;
+        let mut conversion_factor = 1.0;
+        let mut previous_node = None;
+        for current_node in path {
+            if let Some(previous_node) = previous_node {
+                let edge_index = graph.find_edge(previous_node, current_node).unwrap();
+                conversion_factor /= *graph.edge_weight(edge_index).unwrap();
+                //println!("Previous node: {:?}  Current node: {:?} Dividing by: {}", previous_node, current_node, *graph.edge_weight(edge_index).unwrap());
+            }
+            if current_node == to_index {
+                //target node reached
+                break
+            }
+            previous_node = Some(current_node);
+        }
+        return Some(conversion_factor)
+    } else {
+        return None
     }
 }
 
