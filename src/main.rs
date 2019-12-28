@@ -35,7 +35,7 @@ fn main() {
 
     let mut prompt_string = String::from("Please enter a unit conversion: \n(example: 2.4 meters in mm)");
 
-    loop {
+    'outer: loop {
         let mut input = String::new();
         println!("{}", prompt_string);
         io::stdin().read_line(&mut input).expect("Not a string");
@@ -65,7 +65,7 @@ fn main() {
                 indices.push(index);
             } else {
                 println!("{} is not a valid unit\n", name);
-                continue
+                continue 'outer
             }
         }
 
@@ -82,8 +82,8 @@ fn main() {
                 //println!("conversion factor {}", conversion_factor);
                 conversion_factors.push(conversion_factor);
             } else {
-                println!("Not a valid conversion");
-                continue
+                println!("Not a valid conversion\n");
+                continue 'outer
             }
         }
 
@@ -93,7 +93,7 @@ fn main() {
         }
         print_answer(answer, &names, complex_conversion);
 
-        prompt_string = prompt_string.replace("\n(example: 2.4 meters in mm)", "");
+        prompt_string = String::from("Please enter a unit conversion:");
     }
 }
 
@@ -139,9 +139,17 @@ fn create_graph (input_table: String) -> DiGraph<Unit, f64> {
 
         let mut nodes: Vec<NodeIndex> = Vec::new();
         let mut vals: Vec<f64> = Vec::new();
-        for unit in units {
-            let mut unit_parts = unit.split_whitespace();
-            vals.push(unit_parts.next().unwrap().parse().unwrap());
+        for mut unit in units {
+            //separate unit string into value, name, and abbreviation
+            unit = unit.trim();
+            let mut unit_string = String::from(unit);
+            unit_string = unit_string.replace("(", "\n");
+            unit_string = unit_string.replace(")", "");
+            unit_string = unit_string.replacen(" ", "\n", 1);
+            let mut unit_parts = unit_string.split("\n");
+
+            let val_string = unit_parts.next().unwrap().trim();
+            vals.push(val_string.parse().unwrap());
             let full_name = unit_parts.next().unwrap().to_lowercase();
             let random_ab_id = rand::thread_rng().gen_range(0, 100_000);
             let mut ab_name = String::from(random_ab_id.to_string());
@@ -186,9 +194,9 @@ fn add_reverse_edges (mut graph: DiGraph<Unit, f64>) -> DiGraph<Unit, f64> {
 }
 
 //checks for matches of both full name and abbreviation (accounts for plural suffixes)
-fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_distance: u32) -> Option<NodeIndex> {
+fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_distance: u64) -> Option<NodeIndex> {
     let mut matching_nodes: Vec<NodeIndex> = Vec::new();
-    let mut edit_distances: Vec<(u32, u32)> = Vec::new(); //full and ab name differences
+    let mut edit_distances: Vec<(u64, u64)> = Vec::new(); //full and ab name differences
     for node in graph.node_references() {
         if &node.1.full_name == unit_name || &node.1.ab_name == unit_name {
             matching_nodes.push(node.0);
@@ -204,7 +212,7 @@ fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_di
     } else if matching_nodes.len() == 0 && allowed_distance > 0 && unit_name.len() > 3 {
         //if there were no matches, we are allowed to check char differences, and it the name isn't
         //  already too short to reasonably cut off characters (not an abbreviation)...
-        let mut min_dist: u32 = 1000;
+        let mut min_dist: u64 = 1000;
         let mut index_min_dist = 0;
         for i in 0..edit_distances.len() {
             let dist = edit_distances.get(i).unwrap().0; //use distance with full name only
@@ -282,5 +290,5 @@ fn print_answer (mut answer: f64, names: &Vec<String>, complex_conversion: bool)
 }
 
 //to allow use of astar algorithm
-fn empty_heuristic<N>(_nid: N) -> u32 { 0 }
-fn empty_cost(_er : graph::EdgeReference<f64>) -> u32 { 0 }
+fn empty_heuristic<N>(_nid: N) -> u64 { 0 }
+fn empty_cost(_er : graph::EdgeReference<f64>) -> u64 { 0 }
