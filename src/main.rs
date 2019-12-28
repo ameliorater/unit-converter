@@ -237,42 +237,29 @@ fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_di
     }
 }
 
+//this method based on: https://www.geeksforgeeks.org/edit-distance-dp-5/
 //uses Levenshtein distance to calculate the minimum number of insertions, deletions,
 //  or substitutions needed to convert one string into another
-//currently recursive, can be implemented using dp and would be much faster for large strings
-fn get_edit_distance (mut string1: String, mut string2: String) -> u32 {
-    if string1.len() == 0 {
-        return string2.len() as u32;
+fn get_edit_distance (mut string1: String, mut string2: String) -> u64 {
+    let m: usize = string1.len();
+    let n: usize = string2.len();
+    let mut dp: Vec<Vec<u64>> = vec![vec![0; n+1]; m+1];
+
+    let substitution_cost: u32;
+    for i in 0..=m {
+        for j in 0..=n {
+            if i == 0 {
+                dp[i][j] = j as u64;
+            } else if j == 0 {
+                dp[i][j] = i as u64;
+            } else if string1.chars().nth(i-1) == string2.chars().nth(j-1) {
+                dp[i][j] = dp[i-1][j-1];
+            } else {
+                dp[i][j] = 1 + min( min(dp[i][j - 1], dp[i - 1][j]),dp[i - 1][j - 1]);
+            }
+        }
     }
-    if string2.len() == 0 {
-        return string1.len() as u32;
-    }
-
-    //if last characters are equal
-    if string1.chars().nth(string1.len()-1) == string2.chars().nth(string2.len()-1) {
-        string1.remove(string1.len()-1);
-        string2.remove(string2.len()-1);
-        return get_edit_distance(string1, string2);
-    }
-
-    let mut temp_string_1 = string1.clone();
-    temp_string_1.remove(temp_string_1.len()-1);
-    let mut temp_string_2 = string2.clone();
-    temp_string_2.remove(temp_string_2.len()-1);
-    let substitution = get_edit_distance(temp_string_1, temp_string_2);
-
-    let temp_string_1 = string1.clone();
-    let mut temp_string_2 = string2.clone();
-    temp_string_2.remove(temp_string_2.len()-1);
-    let insertion = get_edit_distance(temp_string_1, temp_string_2);
-
-    let mut temp_string_1 = string1.clone();
-    temp_string_1.remove(temp_string_1.len()-1);
-    let temp_string_2 = string2.clone();
-    let deletion = get_edit_distance(temp_string_1, temp_string_2);
-
-    //return 1 + min possible with each of the three operations
-    return 1 + min(substitution, min(insertion, deletion));
+    dp[m][n]
 }
 
 fn print_answer (mut answer: f64, names: &Vec<String>, complex_conversion: bool) {
