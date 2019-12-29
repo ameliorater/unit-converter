@@ -50,7 +50,6 @@ __Examples:__
 
 __Note:__ Enter 'see units' at any time to see a full list of units available from the table.txt file
 
-__Also note:__ If you don't have rustc installed, a .exe file is included in the target/release folder
-(just make sure to include a copy of table.txt in that subfolder as well)
+__Also note:__ If you don't have rustc installed, a .exe file is included in the top level folder (make sure to download table.txt as well as the .exe)
 
 __Credits:__ the unit conversion table was a group effort, and my edit distance function was heavily based on a geeksforgeeks post
