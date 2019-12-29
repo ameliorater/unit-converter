@@ -6,6 +6,7 @@ use petgraph::algo::{has_path_connecting, astar};
 use petgraph::{graph};
 use std::cmp::min;
 use petgraph::dot::{Config, Dot};
+#[windows_subsystem = "console"]
 #[allow(mutable_borrow_reservation_conflict)]
 
 #[derive(Eq, Hash, PartialEq, Clone, Debug)]
@@ -33,7 +34,7 @@ fn main() {
 //    }
 //    //draw_graph(&graph);
 
-    let mut prompt_string = String::from("Please enter a unit conversion: \n(example: 2.4 meters in mm)");
+    let mut prompt_string = String::from("\n\nPlease enter a unit conversion: \n(example: 2.4 meters in mm)");
 
     'outer: loop {
         let mut input = String::new();
@@ -41,30 +42,40 @@ fn main() {
         io::stdin().read_line(&mut input).expect("Not a string");
         let mut input: String = String::from(input.trim()); //trim whitespace
 
+        //separate value
+        input = input.replacen(" ", "\n", 1);
+
         //complex unit conversion
         let mut complex_conversion: bool = false;
         if input.contains("/") || input.contains("per") {
-            input = input.replace("/", " ");
-            input = input.replace("per", " ");
+            input = input.replace("/", "\n");
+            input = input.replace("per", "\n");
             complex_conversion = true;
         }
 
-        let mut elements = input.split_whitespace();
+        let conversion_words: Vec<&str> = vec![" to ", " in ", " -> "];
+        for word in conversion_words {
+            input = input.replace(word, "\n");
+        }
+
+        input = input.trim().parse().unwrap();
+
+        let mut elements = input.lines();
         let input_val: f64 = elements.next().unwrap().parse().unwrap();
         let mut names: Vec<String> = Vec::new(); //will contain from_name, from_name_2, to_name, to_name_2
         names.push(elements.next().unwrap().to_lowercase());
         if complex_conversion { names.push(elements.next().unwrap().to_lowercase()); }
-        elements.next(); //clear intermediary word (in, to, etc.)
         names.push(elements.next().unwrap().to_lowercase());
         if complex_conversion { names.push(elements.next().unwrap().to_lowercase()); }
 
         let mut indices: Vec<NodeIndex> = Vec::new(); //will contain from_index, from_index_2, to_index, to_index_2
         for name in &names {
-            if let Some(index) = get_node_from_name(&graph, &name, 3) {
+            let name_str = &String::from(name.trim());
+            if let Some(index) = get_node_from_name(&graph, &name_str, 2) {
                 //println!("index: {:?}", index);
                 indices.push(index);
             } else {
-                println!("{} is not a valid unit\n", name);
+                println!("{} is not a valid unit\n", name_str);
                 continue 'outer
             }
         }
@@ -106,7 +117,8 @@ fn get_conversion_factor (graph: &DiGraph<Unit, f64>, from_index: NodeIndex, to_
             return Some(conversion_factor)
         }
 
-        let path:  Vec<NodeIndex> = astar(&graph, from_index, |n| n == to_index, empty_cost, empty_heuristic).unwrap().1;
+        let path: Vec<NodeIndex> = astar(&graph, from_index, |n| n == to_index, empty_cost, empty_heuristic).unwrap().1;
+        //println!("path: {:?}", path);
         let mut conversion_factor = 1.0;
         let mut previous_node = None;
         for current_node in path {
@@ -133,6 +145,11 @@ fn create_graph (input_table: String) -> DiGraph<Unit, f64> {
     let lines = input_table.lines();
 
     for line in lines { //should loop twice
+        //allows blank lines in input file
+        if line.trim() == "" {
+            continue
+        }
+
         //separates units
         let line_string = line.replace("=", "\n\r");
         let units = line_string.lines();
@@ -156,7 +173,7 @@ fn create_graph (input_table: String) -> DiGraph<Unit, f64> {
             if unit.contains("(") { //if abbreviation was included
                 ab_name = unit_parts.next().unwrap()
                 .replace("(", "").replace(")", "").to_lowercase();
-                //search by abbreviation (faster, no edit distance)
+                //search by abbreviation (faster, guaranteed unique)
                 if let Some(node_index) = get_node_from_name(&graph, &ab_name, 0) {
                     nodes.push(node_index);
                 } else {
@@ -215,7 +232,8 @@ fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_di
         let mut min_dist: u64 = 1000;
         let mut index_min_dist = 0;
         for i in 0..edit_distances.len() {
-            let dist = edit_distances.get(i).unwrap().0; //use distance with full name only
+            //check edit distances of full names and acronyms (may want to change if this causes problems)
+            let dist = min(edit_distances.get(i).unwrap().0, edit_distances.get(i).unwrap().1);
             if dist < min_dist {
                 min_dist = dist;
                 index_min_dist = i;
@@ -240,12 +258,11 @@ fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_di
 //this method based on: https://www.geeksforgeeks.org/edit-distance-dp-5/
 //uses Levenshtein distance to calculate the minimum number of insertions, deletions,
 //  or substitutions needed to convert one string into another
-fn get_edit_distance (mut string1: String, mut string2: String) -> u64 {
+fn get_edit_distance (string1: String, string2: String) -> u64 {
     let m: usize = string1.len();
     let n: usize = string2.len();
     let mut dp: Vec<Vec<u64>> = vec![vec![0; n+1]; m+1];
 
-    let substitution_cost: u32;
     for i in 0..=m {
         for j in 0..=n {
             if i == 0 {
@@ -267,12 +284,12 @@ fn print_answer (mut answer: f64, names: &Vec<String>, complex_conversion: bool)
         if answer > 0.00001 {
             answer = (answer * 100000_f64).round() / 100000_f64; //round to three decimal places
         }
-        println!("{} {}/{}\n", answer, names.get(2).unwrap(), names.get(3).unwrap()); //round to three decimal places
+        println!("{} {}/{}\n", answer, names.get(2).unwrap().trim(), names.get(3).unwrap().trim()); //round to three decimal places
     } else {
         if answer > 0.00001 {
             answer = (answer * 100000_f64).round() / 100000_f64; //round to three decimal places
         }
-        println!("{} {}\n", answer, names.get(1).unwrap());
+        println!("{} {}\n", answer, names.get(1).unwrap().trim());
     }
 }
 
