@@ -7,7 +7,7 @@
 1 Decameter (dam) = 10 Meters
 1 Hectometer (hm) = 100 Meters
 1 Meter (m) = 3.28 Feet (ft)
-1 Megameter (Mm) = 1000 Kilometers
+1 Megameter = 1000 Kilometers
 1 Gigameter (Gm) = 1000 Megameters
 1 Foot (ft) = 12 Inch (in)
 1 Yard (yd) = 3 Feet

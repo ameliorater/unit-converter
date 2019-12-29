@@ -264,7 +264,7 @@ fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_di
 
     if matching_nodes.len() == 1 {
         return Some(*matching_nodes.get(0).unwrap())
-    } else if matching_nodes.len() == 0 && allowed_distance > 0 && unit_name.len() > 3 {
+    } else if matching_nodes.len() == 0 && allowed_distance > 0 && unit_name.len() > 2 {
         //if there were no matches, we are allowed to check char differences, and it the name isn't
         //  already too short to reasonably cut off characters (not an abbreviation)...
         let mut min_dist: u64 = 1000; //minimum edit distance found between input and all other names
