@@ -16,7 +16,12 @@ struct Unit {
 }
 impl std::fmt::Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "(Name: {}, Abbreviation: {})", self.full_name, self.ab_name)
+        if self.ab_name.len() < 6 {
+            //accounts for random id abbreviations
+            write!(f, "{}({})", self.full_name, self.ab_name)
+        } else {
+            write!(f, "{}", self.full_name)
+        }
     }
 }
 
@@ -34,13 +39,19 @@ fn main() {
 //    }
 //    //draw_graph(&graph);
 
-    let mut prompt_string = String::from("\n\nPlease enter a unit conversion: \n(example: 2.4 meters in mm)");
+    let mut prompt_string = String::from("Please enter a unit conversion: \
+    \n(example: '2.4 meters in mm' or '42 furlongs/fortnight to mi/hour')\n\
+    (you can also enter 'see units' to see all available units and abbreviations)");
 
     'outer: loop {
         let mut input = String::new();
         println!("{}", prompt_string);
         io::stdin().read_line(&mut input).expect("Not a string");
         let mut input: String = String::from(input.trim()); //trim whitespace
+        if get_edit_distance(&input, &String::from("see units")) < 5 {
+            print_units(&graph);
+            continue
+        }
 
         //separate value
         input = input.replacen(" ", "\n", 1);
@@ -168,7 +179,7 @@ fn create_graph (input_table: String) -> DiGraph<Unit, f64> {
             let val_string = unit_parts.next().unwrap().trim();
             vals.push(val_string.parse().unwrap());
             let full_name = unit_parts.next().unwrap().to_lowercase();
-            let random_ab_id = rand::thread_rng().gen_range(0, 100_000);
+            let random_ab_id = rand::thread_rng().gen_range(0, 100_000_000);
             let mut ab_name = String::from(random_ab_id.to_string());
             if unit.contains("(") { //if abbreviation was included
                 ab_name = unit_parts.next().unwrap()
@@ -218,8 +229,8 @@ fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_di
         if &node.1.full_name == unit_name || &node.1.ab_name == unit_name {
             matching_nodes.push(node.0);
         }
-        edit_distances.push((get_edit_distance(unit_name.clone(), node.1.full_name.clone()),
-                               get_edit_distance(unit_name.clone(), node.1.ab_name.clone())))
+        edit_distances.push((get_edit_distance(&unit_name.clone(), &node.1.full_name.clone()),
+                               get_edit_distance(&unit_name.clone(), &node.1.ab_name.clone())))
     }
 
     //return None if there are multiple matches
@@ -258,7 +269,7 @@ fn get_node_from_name(graph: &DiGraph<Unit, f64>, unit_name: &String, allowed_di
 //this method based on: https://www.geeksforgeeks.org/edit-distance-dp-5/
 //uses Levenshtein distance to calculate the minimum number of insertions, deletions,
 //  or substitutions needed to convert one string into another
-fn get_edit_distance (string1: String, string2: String) -> u64 {
+fn get_edit_distance (string1: &String, string2: &String) -> u64 {
     let m: usize = string1.len();
     let n: usize = string2.len();
     let mut dp: Vec<Vec<u64>> = vec![vec![0; n+1]; m+1];
@@ -291,6 +302,14 @@ fn print_answer (mut answer: f64, names: &Vec<String>, complex_conversion: bool)
         }
         println!("{} {}\n", answer, names.get(1).unwrap().trim());
     }
+}
+
+fn print_units(graph: &DiGraph<Unit, f64>) {
+    println!("\n\n");
+    for node in graph.node_references() {
+        println!("{}", node.1);
+    }
+    println!("\n\n");
 }
 
 //to allow use of astar algorithm
