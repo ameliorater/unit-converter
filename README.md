@@ -1,9 +1,9 @@
 # unit-converter
 
 <p>
-This small program can convert between any two (or four) units! Except for the ones that haven't been added to the file or aren't compatible with each other :)
+This small program can convert between any two (or four) units! The program can currently handle conversions such as mi/hr -> m/s, but not things like watts -> J/s (yet). The program should be able to convert between any compatible units that have been added to the table.txt file. 
 
-It can take inputs in several formats, including with abbreviations,
+Conversions can be input in several formats, including with abbreviations,
 full unit names, unit names with typos (and plural suffixes), and complex units (like km/hour to ft/s). 
 It comes with a large list of interesting 
 unit conversions, but as long as you follow the correct format, a (virtually) unlimited number can be added.
@@ -48,8 +48,9 @@ __Examples:__
 
 <br>
 
-__Note:__ Enter 'see units' at any time to see a full list of units available from the table.txt file
+__Other Notes:__ 
+- Enter 'see units' at any time to see a full list of units available from the table.txt file
+- If you don't have rustc installed, a .exe file is included in the top level folder (make sure to download table.txt as well as the .exe)
+- If you find any bugs or add units to the conversion table, please let me know or submit a pull request!
 
-__Also note:__ If you don't have rustc installed, a .exe file is included in the top level folder (make sure to download table.txt as well as the .exe)
-
-__Credits:__ the unit conversion table was a group effort, and my edit distance function was heavily based on a geeksforgeeks post
+__Credits:__ The unit conversion table (table.txt) was a group effort, and my dynamic programming edit distance function was heavily based on a geeksforgeeks post (https://www.geeksforgeeks.org/edit-distance-dp-5/)
