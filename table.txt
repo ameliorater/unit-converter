@@ -7,8 +7,6 @@
 1 Decameter (dam) = 10 Meters
 1 Hectometer (hm) = 100 Meters
 1 Meter (m) = 3.28 Feet (ft)
-1 Megameter = 1000 Kilometers
-1 Gigameter (Gm) = 1000 Megameters
 1 Foot (ft) = 12 Inch (in)
 1 Yard (yd) = 3 Feet
 1 Mile (mi) = 1.609 Kilometer
@@ -83,14 +81,3 @@
 1024 Exabyte (EB) = 1 Zettabyte (ZB)
 1024 Zettabyte (ZB) = 1 Yottabyte (YB)
 1 King James Bible (bible) = 4.25 Megabytes (MB)
-
-
-1 Horsepower (hp) = 735.5 Watts (W)
-1 Donkey power (dp) = 250 Watts (W)
-1 Pirate-ninja (pnj) = 40.55 Watts (W)
-1 Ton of TNT (ton) = 4184000000 Joules (J)
-1 Kiloton (kton) = 1000 Tons of TNT (ton)
-1 Megaton (mton) = 1000 Kilotons (kton)
-1 Foe = 1044 Joules (J)
-1 Double-Decker Bus Length (ddbl) = 8.4 Meters (m)
-1 Double-Decker Bus Height (ddbh) = 4.4 Meters (m)
