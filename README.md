@@ -58,7 +58,7 @@ __How it works:__
 
 __Limitations:__
 - Cannot currently perform conversions between units that are combinations of other units (Watts -> J/s)
-- Crashes on invalid input (although with edit distance allowance this is rare)
+- Crashes on input with the wrong format (not including invalid units and impossible conversions, which have error messages)
 
 <br>
 
